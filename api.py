@@ -27,13 +27,13 @@ def generate_token(apikey: str, exp_seconds: int) -> str:
         id, secret = apikey.split(".")
     except Exception as e:
         raise Exception("invalid apikey", e)
- 
+
     payload = {
         "api_key": id,
         "exp": int(round(time.time() * 1000)) + exp_seconds * 1000,
         "timestamp": int(round(time.time() * 1000)),
     }
- 
+
     return jwt.encode(
         payload,
         secret,
@@ -57,7 +57,7 @@ def get_characterglm_response(messages: TextMsgList, meta: CharacterMeta) -> Gen
             incremental=True)
     )
     resp.raise_for_status()
-    
+
     # 解析响应（非官方实现）
     sep = b':'
     last_event = None
@@ -81,8 +81,8 @@ def get_characterglm_response_via_sdk(messages: TextMsgList, meta: CharacterMeta
     zhipuai.api_key = API_KEY
     response = zhipuai.model_api.sse_invoke(
         model="charglm-3",
-        meta= meta,
-        prompt= messages,
+        meta=meta,
+        prompt=messages,
         incremental=True
     )
     for event in response.events():
@@ -96,7 +96,7 @@ def get_chatglm_response_via_sdk(messages: TextMsgList) -> Generator[str, None, 
     # 需要安装新版zhipuai
     from zhipuai import ZhipuAI
     verify_api_key_not_empty()
-    client = ZhipuAI(api_key=API_KEY) # 请填写您自己的APIKey
+    client = ZhipuAI(api_key=API_KEY)  # 请填写您自己的APIKey
     response = client.chat.completions.create(
         model="glm-3-turbo",  # 填写需要调用的模型名称
         messages=messages,
@@ -108,7 +108,7 @@ def get_chatglm_response_via_sdk(messages: TextMsgList) -> Generator[str, None, 
 
 def generate_role_appearance(role_profile: str) -> Generator[str, None, None]:
     """ 用chatglm生成角色的外貌描写 """
-    
+
     instruction = f"""
 请从下列文本中，抽取人物的外貌描写。若文本中不包含外貌描写，请你推测人物的性别、年龄，并生成一段外貌描写。要求：
 1. 只生成外貌描写，不要生成任何多余的内容。
@@ -137,7 +137,7 @@ def generate_chat_scene_prompt(messages: TextMsgList, meta: CharacterMeta) -> Ge
 {meta['bot_name']}的人设：
 {meta['bot_info']}
     """.strip()
-    
+
     if meta["user_info"]:
         instruction += f"""
 
@@ -146,8 +146,10 @@ def generate_chat_scene_prompt(messages: TextMsgList, meta: CharacterMeta) -> Ge
 """.rstrip()
 
     if messages:
-        instruction += "\n\n对话：" + '\n'.join((meta['bot_name'] if msg['role'] == "assistant" else meta['user_name']) + '：' + msg['content'].strip() for msg in messages)
-    
+        instruction += "\n\n对话：" + \
+            '\n'.join((meta['bot_name'] if msg['role'] == "assistant" else meta['user_name']
+                       ) + '：' + msg['content'].strip() for msg in messages)
+
     instruction += """
     
 要求如下：
@@ -157,7 +159,7 @@ def generate_chat_scene_prompt(messages: TextMsgList, meta: CharacterMeta) -> Ge
 4. 不要超过50字
 """.rstrip()
     print(instruction)
-    
+
     return get_chatglm_response_via_sdk(
         messages=[
             {
@@ -172,10 +174,10 @@ def generate_cogview_image(prompt: str) -> str:
     """ 调用cogview生成图片，返回url """
     # reference: https://open.bigmodel.cn/dev/api#cogview
     from zhipuai import ZhipuAI
-    client = ZhipuAI(api_key=API_KEY) # 请填写您自己的APIKey
-    
+    client = ZhipuAI(api_key=API_KEY)  # 请填写您自己的APIKey
+
     response = client.images.generations(
-        model="cogview-3", #填写需要调用的模型名称
+        model="cogview-3",  # 填写需要调用的模型名称
         prompt=prompt
     )
     return response.data[0].url
